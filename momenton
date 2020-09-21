@@ -1,0 +1,29 @@
+AKS Setup:
+I used Kubernetes with minikube on my local machine as I was on the move. But we can deploy AKS on azure via ARM templates and run the following commands to deploy and configure kong.
+Kong Setup:
+1.	Run kubectl apply -f https://bit.ly/kong-ingress-dbless
+2.	Get kong-proxy url: minikube service -n kong kong-proxy --url
+3.	Set an environment variable to store this proxy url e.g. KONG_PROXY
+export KONG_PROXY=$(minikube service -n kong kong-proxy --url | head -1)
+4.	Setup demo application (returns the pod details):
+kubectl apply -f https://bit.ly/echo-service
+5.	Setup routing configuration:
+echo "
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: api
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /echoservice
+        backend:
+          serviceName: echo
+          servicePort: 80
+" | kubectl apply -f -
+
+6.	Test the configuration: curl -i KONG_PROXY/echoservice
+
